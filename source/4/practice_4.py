@@ -1,37 +1,22 @@
-import time
-import argparse
 import numpy as np
-import math
 
-from gym_pybullet_drones.envs.BaseAviary import DroneModel, Physics
+import movement
+import argparse_settings
+
 from gym_pybullet_drones.envs.CtrlAviary import CtrlAviary
-from gym_pybullet_drones.utils.utils import sync, str2bool
 from gym_pybullet_drones.control.DSLPIDControl import DSLPIDControl
+from gym_pybullet_drones.utils.Logger import Logger
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Сценарий взлета > поворота > пролета > приземления через Ctrl Aviary')
-    parser.add_argument('--drone', default="cf2x", type=DroneModel, help='Модель дрона (default: CF2X)',
-                        choices=DroneModel)
-    parser.add_argument('--num_drones', default=2, type=int, help='Количество дронов (default: 2)')
-    parser.add_argument('--physics', default="pyb", type=Physics, help='Физика Pybullet (default: PYB)',
-                        choices=Physics)
-    parser.add_argument('--gui', default=True, type=str2bool, help='Использовать ли GUI PyBullet (default: True)')
-    parser.add_argument('--obstacles', default=False, type=str2bool, help='Cоздавать ли препятствия (default: False)')
-    parser.add_argument('--simulation_freq_hz', default=240, type=int, help='Частота моделирования в Гц (default: 240)')
-    parser.add_argument('--control_freq_hz', default=48, type=int, help='Управляющая частота в Гц (default: 240)')
-    parser.add_argument('--duration_sec', default=8, type=int, help='Продолжительность моделирования в секундах '
-                                                                    '(default: 8)')
-    parser.add_argument('--user_debug_gui', default=True, type=str2bool, help='отрисовывать ли оси дронов и ползунки '
-                                                                              'оборотов в гуи (default: True)')
-    parser.add_argument('--upper_bound', default=1.0, type=float, help='Высота, на которую дрон должен подняться в м '
-                                                                       '(default: 1)')
-    ARGS = parser.parse_args()
-    AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz / ARGS.control_freq_hz)
-    INIT_XYZS = np.array([[0, 0, 0.02]])
-    for i in range(ARGS.num_drones - 1):
+
+    ARGS = argparse_settings.get_argparse_settings()  # Заполненное пространство имен из argparse
+    AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz / ARGS.control_freq_hz)  # The number of physics steps within one call
+    # to `BaseAviary.step()`.
+    INIT_XYZS = np.array([[0, 0, 0.02]])  # список начальных координат дронов (первый дрон в (0, 0, 0.02))
+    for i in range(ARGS.num_drones - 1):  # оставшиеся дроны в линию по x с расстоянием 1
         INIT_XYZS = np.concatenate((INIT_XYZS, np.array([[i + 1, 0, 0.02]])))
 
-    env = CtrlAviary(drone_model=ARGS.drone,
+    env = CtrlAviary(drone_model=ARGS.drone,  # стандартный контроллер
                      num_drones=ARGS.num_drones,
                      initial_xyzs=INIT_XYZS,
                      initial_rpys=None,
@@ -44,119 +29,70 @@ if __name__ == "__main__":
                      user_debug_gui=ARGS.user_debug_gui
                      )
 
-    ctrl = [DSLPIDControl(env) for i in range(ARGS.num_drones)]
-    states = []
+    """Initialization of an aviary environment for control applications.
+
+           Parameters
+           ----------
+           drone_model : DroneModel, optional
+               The desired drone type (detailed in an .urdf file in folder `assets`).
+           num_drones : int, optional
+               The desired number of drones in the aviary.
+           neighbourhood_radius : float, optional
+               Radius used to compute the drones' adjacency matrix, in meters.
+           initial_xyzs: ndarray | None, optional
+               (NUM_DRONES, 3)-shaped array containing the initial XYZ position of the drones.
+           initial_rpys: ndarray | None, optional
+               (NUM_DRONES, 3)-shaped array containing the initial orientations of the drones (in radians).
+           physics : Physics, optional
+               The desired implementation of PyBullet physics/custom dynamics.
+           freq : int, optional
+               The frequency (Hz) at which the physics engine steps.
+           aggregate_phy_steps : int, optional
+               The number of physics steps within one call to `BaseAviary.step()`.
+           gui : bool, optional
+               Whether to use PyBullet's GUI.
+           record : bool, optional
+               Whether to save a video of the simulation in folder `files/videos/`.
+           obstacles : bool, optional
+               Whether to add obstacles to the simulation.
+           user_debug_gui : bool, optional
+               Whether to draw the drones' axes and the GUI RPMs sliders.
+
+           """
+
+    logger = Logger(logging_freq_hz=int(ARGS.simulation_freq_hz / AGGR_PHY_STEPS),
+                    num_drones=ARGS.num_drones)
+
+    """Logger class __init__ method.
+
+    Parameters
+    ----------
+    logging_freq_hz : int
+        Logging frequency in Hz.
+    num_drones : int, optional
+        Number of drones.
+    duration_sec : int, optional
+        Used to preallocate the log arrays (improves performance).
+
+    """
+
+    ctrl = [DSLPIDControl(env) for i in range(ARGS.num_drones)]  # пояснения этих переменных есть в movement.py в
+    # описании параметров
     action = {}
-    CTRL_EVERY_N_STEPS = int(np.floor(env.SIM_FREQ / ARGS.control_freq_hz))
     takeoff_speed = 0.01
     position = []
     for i in range(ARGS.num_drones):
         position.append(INIT_XYZS[i])
 
-    start = time.time()
-    for i in range(0, int(ARGS.duration_sec * env.SIM_FREQ), AGGR_PHY_STEPS):  # взлет
-
-        OBS, _, _, _ = env.step(action)
-
-        if ARGS.gui:
-            sync(i, start, env.TIMESTEP)
-
-        for j in range(ARGS.num_drones):
-            if position[j][2] < ARGS.upper_bound:
-                position[j][2] += takeoff_speed
-            action[str(j)], _, _ = ctrl[j].computeControlFromState(
-                control_timestep=CTRL_EVERY_N_STEPS * env.TIMESTEP,
-                state=OBS[str(j)]["state"],
-                target_pos=np.array(position[j]),
-            )
-        if time.time() - start >= 3:
-            break
-
-    start = time.time()
-    for i in range(0, int(ARGS.duration_sec * env.SIM_FREQ), AGGR_PHY_STEPS):  # повороты
-
-        OBS, _, _, _ = env.step(action)
-
-        if ARGS.gui:
-            sync(i, start, env.TIMESTEP)
-
-        if time.time() - start < 3:  # 2 поворота (1-ый дрон по часовой, 2-ой - против)
-            for j in range(ARGS.num_drones):
-                if j % 2 == 0:
-                    angle = math.pi / 1000
-                else:
-                    angle = -math.pi / 1000
-                action[str(j)], _, _ = ctrl[j].computeControl(
-                    cur_pos=OBS[str(j)]["state"][0:3],
-                    control_timestep=CTRL_EVERY_N_STEPS * env.TIMESTEP,
-                    target_pos=np.array(position[j]),
-                    cur_quat=np.array([0, 0, 1, angle]),
-                    cur_vel=np.zeros(3),
-                    cur_ang_vel=np.zeros(3), )
-        elif time.time() - start < 6:  # поворот дронов в обратную сторону, чтобы их затормозить
-            for j in range(ARGS.num_drones):
-                if j % 2 == 0:
-                    angle = -math.pi / 1000
-                else:
-                    angle = math.pi / 1000
-                action[str(j)], _, _ = ctrl[j].computeControl(
-                    cur_pos=OBS[str(j)]["state"][0:3],
-                    control_timestep=CTRL_EVERY_N_STEPS * env.TIMESTEP,
-                    target_pos=np.array(position[j]),
-                    cur_quat=np.array([0, 0, 1, angle]),
-                    cur_vel=np.zeros(3),
-                    cur_ang_vel=np.zeros(3), )
-        elif time.time() - start < 8.5:  # время для стабилизации
-            for j in range(ARGS.num_drones):
-                action[str(j)], _, _ = ctrl[j].computeControlFromState(
-                    control_timestep=CTRL_EVERY_N_STEPS * env.TIMESTEP,
-                    state=OBS[str(j)]["state"],
-                    target_pos=np.array(position[j]),
-                )
-            else:
-                break
-
-    start = time.time()
-    for i in range(0, int(ARGS.duration_sec * env.SIM_FREQ), AGGR_PHY_STEPS):  # передвижение дронов в разные стороны
-        OBS, _, _, _ = env.step(action)
-
-        if ARGS.gui:
-            sync(i, start, env.TIMESTEP)
-
-        for j in range(ARGS.num_drones):
-            if j % 2 == 0:
-                if position[j][1] < ARGS.num_drones:
-                    position[j][1] += takeoff_speed
-                action[str(j)], _, _ = ctrl[j].computeControlFromState(
-                    control_timestep=CTRL_EVERY_N_STEPS * env.TIMESTEP,
-                    state=OBS[str(j)]["state"],
-                    target_pos=np.array(position[j]),
-                )
-            else:
-                if position[j][1] > -ARGS.num_drones:
-                    position[j][1] -= takeoff_speed
-                action[str(j)], _, _ = ctrl[j].computeControlFromState(
-                    control_timestep=CTRL_EVERY_N_STEPS * env.TIMESTEP,
-                    state=OBS[str(j)]["state"],
-                    target_pos=np.array(position[j]),
-                )
-        if time.time() - start >= 6:
-            break
-
-    start = time.time()
-    for i in range(0, int(ARGS.duration_sec * env.SIM_FREQ), AGGR_PHY_STEPS):  # приземление
-        OBS, _, _, _ = env.step(action)
-
-        if ARGS.gui:
-            sync(i, start, env.TIMESTEP)
-
-        for j in range(ARGS.num_drones):
-            if position[j][2] > 0.02:
-                position[j][2] -= takeoff_speed
-            action[str(j)], _, _ = ctrl[j].computeControlFromState(
-                control_timestep=CTRL_EVERY_N_STEPS * env.TIMESTEP,
-                state=OBS[str(j)]["state"],
-                target_pos=np.array(position[j]),
-            )
+    # в movement.py есть описание параметров функций
+    movement.fly_to_position(logger, 0, ARGS.upper_bound, ARGS, env, AGGR_PHY_STEPS, action, position, takeoff_speed,
+                             ctrl, 3)  # полет вверх
+    movement.turn(logger, ARGS, env, AGGR_PHY_STEPS, action, ctrl, position, 8.5)  # обороты
+    movement.fly_to_position(logger, 2, ARGS.num_drones, ARGS, env, AGGR_PHY_STEPS, action, position, takeoff_speed,
+                             ctrl, 6)  # перемещение дронов
+    movement.fly_to_position(logger, 1, 0.02, ARGS, env, AGGR_PHY_STEPS, action, position, takeoff_speed, ctrl, 3)
+    # посадка дронов
 
     env.close()
+    logger.save()
+    logger.plot()  # вывод логов
