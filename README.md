@@ -1,4 +1,4 @@
-# gym-pybullet-drones-practic
+# gym-pybullet-drones-practice
 Репозиторий практики по библиотеке gym-pybullet-drones (https://github.com/utiasDSL/gym-pybullet-drones)
 # Установка библиотеки (Windows)
 Существует инструкция по установке (https://github.com/utiasDSL/gym-pybullet-drones/tree/master/assignments#on-windows), здесь она будет продублирована на русском и дополнена
