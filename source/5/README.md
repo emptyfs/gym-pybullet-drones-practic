@@ -1,82 +1,66 @@
-# gym-pybullet-drones-practic
-Репозиторий практики по библиотеке gym-pybullet-drones (https://github.com/utiasDSL/gym-pybullet-drones)
-# Установка библиотеки (Windows)
-Существует инструкция по установке (https://github.com/utiasDSL/gym-pybullet-drones/tree/master/assignments#on-windows), здесь она будет продублирована на русском и дополнена
+# Инструция по установке и запуску образа Docker
 
+# Установка
 ### Необходимые ресурсы
+- [Docker](https://www.docker.com/)
+- [VcXsrv Windows X Server](https://sourceforge.net/projects/vcxsrv/)
+### Скачивание образа
+Образ хранится на [DockerHub](https://hub.docker.com/r/emptyfs/practice-drones-korsunov)
 
- Visual Studio и [C++ 14.0](https://visualstudio.microsoft.com/downloads/)
-- Разработчики рекомендуют the free Community version
-- Необходима "Desktop development with C++"
+Команда для скачивания - `docker pull emptyfs/practice-drones-korsunov`
 
-[Python 3](https://www.python.org/downloads/release/python-390/)
-- Используется [Windows x86-64 installer](https://www.python.org/ftp/python/3.9.0/python-3.9.0-amd64.exe) on Windows 10 Home
-- Python должен быть 3.9
+### Запуск (настройка X Server)
+Для использования GUI понадобится скачать и насроить X Server (мной использовался VcXsrv)
 
-Python IDE
-- Разработчики рекомендуют [PyCharm Community](https://www.jetbrains.com/pycharm/download/#section=windows)
+Далее нужно запустить `xlaunch` для насройки сервера
+![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/6263c173-fdad-4675-8de7-5549b994dd6e)
 
-### Установка
+Настройки должны соответствовать настройкам на следующих скриншотах
+![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/0b7d4514-82b3-4248-8ad3-db12ca581d7f)
+![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/e823c03b-ca7b-4113-aec2-8ff23f4ceab1)
+![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/f532c8f6-7bd1-4b09-b717-6246525f7657)
 
-Скачайте zip-архив
-- Перейдите на https://github.com/utiasDSL/gym-pybullet-drones/releases
-- Найдите версию `v0.5.2`, найлите в "Assets" архивы и скачайте на выбор (zip или tar.gz)
+После этого должен появится значок сервера:
 
-![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/97edb206-8ea4-4617-aa06-bf3e77fd3dd8)
+![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/70705a14-d665-4162-9590-856b2da6b792)
 
-Распакуйте скаченный архив и откройте проект `gym-pybullet-drones-v0.5.2` через PyCharm (учтите, что путь к проекту не должен содержать кириллицу - только латиницу, иначе будут вылетать ошибки)
+Теперь понадобится ваш IP-адрес, его можно узнать командой `ipconfig`:
 
-![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/203f6ac6-d59d-49f8-8d5c-835da5dfd457)
+![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/32ee3caf-f701-4928-bf24-f69ed6e455b7)
 
-В файле `setup.py` перечислены необходимые для установки пакеты (среда PyCharm может вывести список необходимых пакетов в всплывающем окне), пакеты можно установить вручную:
-Выберите `File->Settings` и нажмите `Project:gym-pybullet-drones-0.5.2->Python Interpreter`
-![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/089db82b-6607-4173-953a-fd751b32edce)
-- Нажмите `+`, чтобы добавить пакет и `-`, чтобы удалить
+IP-адрес устанавливается в переменную среды командой `set-variable -name DISPLAY -value <ваш IP-адрес>:0.0`
 
-Список всех пакетов, которые могут понадобиться:
-- `numpy`
-- `matplotlib`
-- `pybullet`
-- `gym`
-- `Pillow`
-- `сycler`
-- `stable_baselines3`
-- `ray[rllib]`
-- `scipy`
+### Запуск (без и с GUI)
+Для запуска предусмотрены 2 флага:
+- `GUI`, который отвечает за наличие графического отображения (к команде запуска нужно добавить `-e GUI=False` (вместо 'False' предусмотрено использование 'false' или '0') - для запуска без GUI и любое другое значение для запуска с GUI (например, `-e GUI=True`))
+- `MODE`, который отвечает за сценарий полета дронов (к команде запуска нужно добавить `-e MODE=4` - для сценария полета на оценку 'Хорошо' и любое другое значение для сценария полета на оценку 'Удовлетворительно' (например, `-e MODE=3`))
 
-Если все сделано верно, то можно будет запустить следующие файлы проекта и увидеть демонстрируемый разработчиками функционал:
-- `assignments.aer1216_fall2020_hw1_sim.py`
-- `examples.compare.py`
-- `examples.downwash.py`
-- `examples.fly.py`
-- `examples.physics.py`
+Все варианты команд запуска:
+- `docker run -ti --rm -e DISPLAY=$DISPLAY -e GUI=True -e MODE=4 emptyfs/practice-drones-korsunov` - с GUI и сценарием на 4
+- `docker run -ti --rm -e DISPLAY=$DISPLAY -e GUI=False -e MODE=4 emptyfs/practice-drones-korsunov` - без GUI и сценарием на 4
+- `docker run -ti --rm -e DISPLAY=$DISPLAY -e GUI=True -e MODE=3 emptyfs/practice-drones-korsunov` - с GUI и сценарием на 3
+- `docker run -ti --rm -e DISPLAY=$DISPLAY -e GUI=False -e MODE=3 emptyfs/practice-drones-korsunov` - без GUI и сценарием на 3
 
-# Задания
-### Удовлетворительно
-1) Подготовить инстркуцию по установке и запуске пользовательского решения в https://github.com/utiasDSL/gym-pybullet-drones/tree/master
-2) Подготовить решение (+ скринкаст его работы) движения дрона по следующей программе
-Взлететь 
-- Студентам ПИ - пролететь вперед на Н метров
-- Студентам ПМ - развернутся на  Н оборотов
-- Приземлиться (мягко)
-### Хорошо
-1) Подготовить решение (+ скринкаст его работы) движения Н дронОВ по следующей программе
-- Исходно дроны расположены в линию с интервалом в один метр
-Одновременно всеми дронами:
-- Взлететь 
-- Студентам ПИ - пролететь вперед (ортогонально к исходной линии)  на Н метров, повернутся на 90 градусов и пролететь еще Н метров 
-- Студентам ПМ - развернутся на  Н оборотов (четные дроны - по часовой, нечетные - против часовой стрелки), пролететь на Н метров (четные дроны в одну сторону, нечетные  - в противоположную)
-- Приземлиться (мягко)
-### Отлично
-1) Обернуть запуска всех решений выше (заодно и просто самого симулятора) в докер
-2) Добавить флаги для запуска с включенным и отключенным GUI
+Демонстрация запуска
+![image](https://github.com/emptyfs/gym-pybullet-drones-practic/assets/54939750/80e487aa-e733-4c05-9a8d-add20547e791)
 
-Н - последняя цифра номера вашей группы + остаток от деления на 9 вашего номера в таблице
-В моем случае H = 2
+Если возникает ошибка `cannot connect to X server`, то значит вы не подключились к серверу, чтобы исправить ошибку нужно снова задайте свой IP-адрес в переменную `DISPLAY` (учтите, что VcXsrv должен быть включен) - эти действия описаны выше в пункте `Запуск (настройка X Server)`
 
-# Выполнение
-В папке `source` лежат 3 папки, каждая из которых содержит материалы к каждому заданию (на "удовлетворительно", "хорошо" и "отлично")
-Файлы кода следует расположить в скаченном ранее проекте (пункт `Установка`) в папке `examples`.
 
-В проекте был реализован модуль `argparse` (через `--help` можно запросить информацию о параметрах)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
