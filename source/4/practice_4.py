@@ -1,7 +1,11 @@
 import numpy as np
+import os
 
 import movement
 import argparse_settings
+
+#import sys
+#sys.path.append('.../')
 
 from gym_pybullet_drones.envs.CtrlAviary import CtrlAviary
 from gym_pybullet_drones.control.DSLPIDControl import DSLPIDControl
@@ -10,6 +14,11 @@ from gym_pybullet_drones.utils.Logger import Logger
 if __name__ == "__main__":
 
     ARGS = argparse_settings.get_argparse_settings()  # Заполненное пространство имен из argparse
+
+    gui = os.getenv('GUI', 'false')
+    if gui == '0' or gui == 'False' or gui == 'F':
+        ARGS.gui = False
+
     AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz / ARGS.control_freq_hz)  # The number of physics steps within one call
     # to `BaseAviary.step()`.
     INIT_XYZS = np.array([[0, 0, 0.02]])  # список начальных координат дронов (первый дрон в (0, 0, 0.02))
@@ -88,8 +97,15 @@ if __name__ == "__main__":
     movement.fly_to_position(logger, 0, ARGS.upper_bound, ARGS, env, AGGR_PHY_STEPS, action, position, takeoff_speed,
                              ctrl, 3)  # полет вверх
     movement.turn(logger, ARGS, env, AGGR_PHY_STEPS, action, ctrl, position, 8.5)  # обороты
-    movement.fly_to_position(logger, 2, ARGS.num_drones, ARGS, env, AGGR_PHY_STEPS, action, position, takeoff_speed,
-                             ctrl, 6)  # перемещение дронов
+
+    practic_mode = os.getenv('MODE', 'false')
+    if practic_mode != '3':
+        practic_mode = '4'
+    if practic_mode == '4':
+        movement.fly_to_position(logger, 2, ARGS.num_drones, ARGS, env, AGGR_PHY_STEPS, action, position, takeoff_speed,
+                                 ctrl, 6)  # перемещение дронов
+    
+
     movement.fly_to_position(logger, 1, 0.02, ARGS, env, AGGR_PHY_STEPS, action, position, takeoff_speed, ctrl, 3)
     # посадка дронов
 
