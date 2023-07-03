@@ -2,6 +2,9 @@ import time
 import numpy as np
 import math
 
+import sys
+sys.path.append('./')
+
 from gym_pybullet_drones.utils.utils import sync
 
 
@@ -126,6 +129,8 @@ def turn(logger, ARGS, env, AGGR_PHY_STEPS, action, ctrl, position, stop_time): 
         if ARGS.gui:
             sync(i, start, env.TIMESTEP)
 
+        _log_simulation(ARGS, logger, i, env, OBS)
+
         if time.time() - start < 3:  # 2 поворота (1-ый дрон по часовой, 2-ой - против)
             for j in range(ARGS.num_drones):
                 if j % 2 == 0:
@@ -145,7 +150,6 @@ def turn(logger, ARGS, env, AGGR_PHY_STEPS, action, ctrl, position, stop_time): 
             for j in range(ARGS.num_drones):
                 _action_pos(action, ctrl, j, CTRL_EVERY_N_STEPS, env, OBS, position)
         else:
-            _log_simulation(ARGS, logger, i, env, OBS)
             break
 
 
@@ -189,6 +193,8 @@ def fly_to_position(logger, mode, stop_pos, ARGS, env, AGGR_PHY_STEPS, action, p
         if ARGS.gui:
             sync(i, start, env.TIMESTEP)
 
+        _log_simulation(ARGS, logger, i, env, OBS)
+
         for j in range(ARGS.num_drones):
             if mode == 0:
                 if position[j][2] < stop_pos:
@@ -205,5 +211,4 @@ def fly_to_position(logger, mode, stop_pos, ARGS, env, AGGR_PHY_STEPS, action, p
                         position[j][1] -= takeoff_speed
             _action_pos(action, ctrl, j, CTRL_EVERY_N_STEPS, env, OBS, position)
         if time.time() - start >= stop_time:
-            _log_simulation(ARGS, logger, i, env, OBS)
             break

@@ -1,7 +1,11 @@
 import numpy as np
+import os
 
 import movement
 import argparse_settings
+
+#import sys
+#sys.path.append('.../')
 
 from gym_pybullet_drones.envs.CtrlAviary import CtrlAviary
 from gym_pybullet_drones.control.DSLPIDControl import DSLPIDControl
@@ -10,6 +14,11 @@ from gym_pybullet_drones.utils.Logger import Logger
 if __name__ == "__main__":
 
     ARGS = argparse_settings.get_argparse_settings()  # Заполненное пространство имен из argparse
+
+    gui = os.getenv('GUI', 'false')
+    if gui == '0' or gui == 'False' or gui == 'F':
+        ARGS.gui = False
+
     AGGR_PHY_STEPS = int(ARGS.simulation_freq_hz / ARGS.control_freq_hz)  # The number of physics steps within one call
     # to `BaseAviary.step()`.
     INIT_XYZS = np.array([[0, 0, 0.02]])  # список начальных координат дронов (первый дрон в (0, 0, 0.02))

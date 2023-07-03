@@ -12,7 +12,7 @@ def get_argparse_settings():
     parser.add_argument('--num_drones', default=2, type=int, help='Количество дронов (default: 2)')
     parser.add_argument('--physics', default="pyb", type=Physics, help='Физика Pybullet (default: PYB)',
                         choices=Physics)
-    parser.add_argument('--gui', default=True, type=str2bool, help='Использовать ли GUI PyBullet (default: True)')
+    parser.add_argument('--gui', default=True, type=bool, help='Использовать ли GUI PyBullet (default: True)')
     parser.add_argument('--obstacles', default=False, type=str2bool, help='Cоздавать ли препятствия (default: False)')
     parser.add_argument('--simulation_freq_hz', default=240, type=int, help='Частота моделирования в Гц (default: 240)')
     parser.add_argument('--control_freq_hz', default=48, type=int, help='Управляющая частота в Гц (default: 240)')
