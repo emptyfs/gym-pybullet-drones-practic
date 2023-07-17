@@ -51,7 +51,7 @@ Python IDE
 - `examples.fly.py`
 - `examples.physics.py`
 
-# Задания
+# Задачи
 1) Подготовить инстркуцию по установке и запуске пользовательского решения в https://github.com/utiasDSL/gym-pybullet-drones/tree/master
 2) Подготовить решение (+ скринкаст его работы) движения дрона по следующей программе
 Взлететь 
